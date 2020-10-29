@@ -1,5 +1,6 @@
 const cloudinary = require('../services/cloudinary');
 const AppError = require('../services/errorUtil');
+const fs = require('fs');
 
 class Image{
     static async uploadImage(req, res, next){
@@ -11,6 +12,7 @@ class Image{
                     const file = files[i];
                     const result = await cloudinary.uploadImage(file.path)
                     resultArr.push(result);
+                    fs.unlinkSync(file.path)
                 }
                 res.status(200).json({status: "success", message: "image successfully uploaded", data: resultArr})
             }else{
@@ -31,9 +33,13 @@ class Image{
                 throw new AppError("you must provide an image id else there'd be nothing to search for", "400")
             }
             const result = await cloudinary.searchImage(publicIdArr);
+            const fetchedId = []
+            for(let i = 0; i < result.resources.length ; i ++){
+                fetchedId.push(result.resources[i].public_id)
+            }
             res.status(200).json({
                 status: "success", 
-                message: `image(s) with id(s) ${publicIdArr} successfuully fetched`,
+                message: result.resources.length > 0 ?`image(s) with id(s) ${fetchedId} successfuully fetched` : `no image with such id was found`,
                 data: result})}
         catch(err){
             next(err);
